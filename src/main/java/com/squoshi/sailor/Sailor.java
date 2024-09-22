@@ -120,15 +120,8 @@ public class Sailor {
                 LoadedServerShip ship = VSGameUtilsKt.getShipObjectManagingPos((ServerLevel) pLevel, positionInShip);
                 if (ship == null) return;
                 WeightForcesApplier forcesApplier = WeightForcesApplier.getOrCreateControl(ship);
-//                Vector3dc diff = ship.getTransform().getPositionInWorld().sub(new Vector3d(pEntity.getX(), pEntity.getY(), pEntity.getZ()), new Vector3d());
-//                          ^^^^ this doesn't work at all, not sure why
-
-                /*
-                    param 1: force - direction and magnitude of the force
-                    param 2: pos - center of the force, relative to the ship's center of mass in world coordinates
-                    keep in mind that pos is relative to the SHIPYARD position, not the world position
-                 */
-//                forcesApplier.applyRotDependentForceToPos(new Vector3d(0, -pFallDistance / 150, 0), /* NYI */);
+                Vector3dc pos = ship.getTransform().getWorldToShip().transformPosition(new Vector3d(pPos.getX(), pPos.getY(), pPos.getZ()), new Vector3d());
+                forcesApplier.applyRotDependentForceToPos(new Vector3d(0, -pFallDistance / 150, 0), pos);
             }
         });
     }
