@@ -14,13 +14,17 @@ import net.minecraft.world.phys.AABB;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.fml.common.Mod;
+import org.joml.Matrix4dc;
+import org.joml.Quaterniondc;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.joml.primitives.AABBd;
 import org.slf4j.Logger;
 import org.valkyrienskies.core.api.ships.LoadedServerShip;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
+import org.valkyrienskies.mod.common.util.EntityDraggingInformation;
 import org.valkyrienskies.mod.common.util.GameTickForceApplier;
+import org.valkyrienskies.mod.common.util.IEntityDraggingInformationProvider;
 
 @Mod(Sailor.MODID)
 @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
@@ -120,8 +124,15 @@ public class Sailor {
                 LoadedServerShip ship = VSGameUtilsKt.getShipObjectManagingPos((ServerLevel) pLevel, positionInShip);
                 if (ship == null) return;
                 WeightForcesApplier forcesApplier = WeightForcesApplier.getOrCreateControl(ship);
-                Vector3dc pos = ship.getTransform().getWorldToShip().transformPosition(new Vector3d(pPos.getX(), pPos.getY(), pPos.getZ()), new Vector3d());
-                forcesApplier.applyRotDependentForceToPos(new Vector3d(0, -pFallDistance / 150, 0), pos);
+                Vector3dc playerPos = ship.getTransform().getWorldToShip().transformPosition(new Vector3d(pEntity.getX(), pEntity.getY(), pEntity.getZ()));
+                Vector3dc comPos = ship.getInertiaData().getCenterOfMassInShip();
+                Vector3dc pos = new Vector3d(
+                        playerPos.x() - comPos.x(),
+                        playerPos.y() - comPos.y(),
+                        playerPos.z() - comPos.z()
+                );
+                Vector3dc force = new Vector3d(0, -pFallDistance / 150, 0);
+                forcesApplier.applyRotDependentForceToPos(force, pos);
             }
         });
     }
