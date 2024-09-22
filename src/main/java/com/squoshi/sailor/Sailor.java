@@ -1,6 +1,7 @@
 package com.squoshi.sailor;
 
 import com.mojang.logging.LogUtils;
+import com.squoshi.sailor.ship.WeightForcesApplier;
 import com.squoshi.sailor.util.MathUtil;
 import com.squoshi.sailor.util.ShipUtil;
 import net.minecraft.core.BlockPos;
@@ -13,12 +14,10 @@ import net.minecraft.world.phys.AABB;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.fml.common.Mod;
-import org.joml.Quaterniondc;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.joml.primitives.AABBd;
 import org.slf4j.Logger;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.valkyrienskies.core.api.ships.LoadedServerShip;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
 import org.valkyrienskies.mod.common.util.GameTickForceApplier;
@@ -87,7 +86,8 @@ public class Sailor {
 
             Vector3dc n = new Vector3d(windAndWaves.noise.x(), windAndWaves.noise.y(), windAndWaves.noise.z()).mul(10);
             log("D: Noise: {}", n);
-            windAndWaves.forceApplier.applyInvariantForceToPos(n, randomPosOnShip);
+//            temporarily disabled for testing weight
+//            windAndWaves.forceApplier.applyInvariantForceToPos(n, randomPosOnShip);
 
             // TODO: Add wind
         });
@@ -113,25 +113,22 @@ public class Sailor {
     }
 
     // Mixin reloadables:
-    public static void onFall(Level pLevel, BlockState pState, BlockPos pPos, Entity pEntity, float pFallDistance, CallbackInfo ci) {
-        log("Block falling on: {}", pPos);
-
+    public static void onFall(Level pLevel, BlockState pState, BlockPos pPos, Entity pEntity, float pFallDistance) {
         VSGameUtilsKt.getShipsIntersecting(pLevel, new AABBd(pPos.getX(), pPos.getY(), pPos.getZ(), pPos.getX() + 1, pPos.getY() + 1, pPos.getZ() + 1)).forEach(s -> {
             if (s != null) {
-                LoadedServerShip ship = VSGameUtilsKt.getShipObjectManagingPos((ServerLevel) pLevel, s.getTransform().getPositionInShip());
-                log("Ship: {}", ship);
-                if (ship.getAttachment(GameTickForceApplier.class) == null) {
-                    ship.saveAttachment(GameTickForceApplier.class, new GameTickForceApplier());
-                }
-                GameTickForceApplier forceApplier = ship.getAttachment(GameTickForceApplier.class);
+                Vector3dc positionInShip = s.getTransform().getPositionInShip();
+                LoadedServerShip ship = VSGameUtilsKt.getShipObjectManagingPos((ServerLevel) pLevel, positionInShip);
+                if (ship == null) return;
+                WeightForcesApplier forcesApplier = WeightForcesApplier.getOrCreateControl(ship);
+//                Vector3dc diff = ship.getTransform().getPositionInWorld().sub(new Vector3d(pEntity.getX(), pEntity.getY(), pEntity.getZ()), new Vector3d());
+//                          ^^^^ this doesn't work at all, not sure why
 
-                Vector3d relativePos = new Vector3d(pPos.getX() - ship.getTransform().getPositionInShip().x(), pPos.getY() - ship.getTransform().getPositionInShip().y(), pPos.getZ() - ship.getTransform().getPositionInShip().z());
-                Vector3d force = new Vector3d(0, -pFallDistance / 150, 0);
-                Quaterniondc rotation = ship.getTransform().getShipToWorldRotation();
-                Vector3d posRotated = relativePos.rotate(rotation);
-                Vector3d forceRotated = force.rotate(rotation);
-                LOGGER.info("Applying force {} to pos {}", forceRotated, posRotated);
-                forceApplier.applyInvariantForceToPos(forceRotated, posRotated);
+                /*
+                    param 1: force - direction and magnitude of the force
+                    param 2: pos - center of the force, relative to the ship's center of mass in world coordinates
+                    keep in mind that pos is relative to the SHIPYARD position, not the world position
+                 */
+//                forcesApplier.applyRotDependentForceToPos(new Vector3d(0, -pFallDistance / 150, 0), /* NYI */);
             }
         });
     }

@@ -16,6 +16,6 @@ public class BlockMixin {
     @Inject(method = "fallOn", at = @At("HEAD"))
     private void sailor$fallOn(Level pLevel, BlockState pState, BlockPos pPos, Entity pEntity, float pFallDistance, CallbackInfo ci) {
         if (pLevel.isClientSide()) return;
-        Sailor.onFall(pLevel, pState, pPos, pEntity, pFallDistance, ci);
+        Sailor.onFall(pLevel, pState, pPos, pEntity, pFallDistance);
     }
 }
