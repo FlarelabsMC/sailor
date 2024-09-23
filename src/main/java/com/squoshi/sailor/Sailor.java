@@ -1,6 +1,7 @@
 package com.squoshi.sailor;
 
 import com.mojang.logging.LogUtils;
+import com.squoshi.sailor.Sailor.WindAndWaves;
 import com.squoshi.sailor.ship.WeightForcesApplier;
 import com.squoshi.sailor.util.MathUtil;
 import com.squoshi.sailor.util.ShipUtil;
@@ -8,9 +9,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -120,19 +124,20 @@ public class Sailor {
     public static void onFall(Level pLevel, BlockState pState, BlockPos pPos, Entity pEntity, float pFallDistance) {
         VSGameUtilsKt.getShipsIntersecting(pLevel, new AABBd(pPos.getX(), pPos.getY(), pPos.getZ(), pPos.getX() + 1, pPos.getY() + 1, pPos.getZ() + 1)).forEach(s -> {
             if (s != null) {
-                Vector3dc positionInShip = s.getTransform().getPositionInShip();
-                LoadedServerShip ship = VSGameUtilsKt.getShipObjectManagingPos((ServerLevel) pLevel, positionInShip);
+                LoadedServerShip ship = VSGameUtilsKt.getShipObjectManagingPos((ServerLevel) pLevel, s.getTransform().getPositionInShip());
                 if (ship == null) return;
-                WeightForcesApplier forcesApplier = WeightForcesApplier.getOrCreateControl(ship);
-                Vector3dc playerPos = ship.getTransform().getWorldToShip().transformPosition(new Vector3d(pEntity.getX(), pEntity.getY(), pEntity.getZ()));
-                Vector3dc comPos = ship.getInertiaData().getCenterOfMassInShip();
-                Vector3dc pos = new Vector3d(
-                        playerPos.x() - comPos.x(),
-                        playerPos.y() - comPos.y(),
-                        playerPos.z() - comPos.z()
-                );
-                Vector3dc force = new Vector3d(0, -pFallDistance / 150, 0);
-                forcesApplier.applyRotDependentForceToPos(force, pos);
+//                WeightForcesApplier forcesApplier = WeightForcesApplier.getOrCreateControl(ship);
+                if (ship.getAttachment(GameTickForceApplier.class) == null) {
+                    ship.saveAttachment(GameTickForceApplier.class, new GameTickForceApplier());
+                }
+                GameTickForceApplier forcesApplier = ship.getAttachment(GameTickForceApplier.class);
+                Vec3 playerPosInWorld = new Vec3(pEntity.getX(), pEntity.getY(), pEntity.getZ());
+//                Vec3 blockPosInWorld = new Vec3(pPos.getX(), pPos.getY(), pPos.getZ());
+                BlockHitResult clip = pLevel.clip(new ClipContext(playerPosInWorld, playerPosInWorld.subtract(0, 2, 0), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, null));
+                Vec3 pos = clip.getLocation();
+                Vector3d posFinal = new Vector3d(pos.x, pos.y, pos.z).sub(ship.getTransform().getPositionInShip());
+                LOGGER.info("{}", pos);
+                forcesApplier.applyInvariantForceToPos(new Vector3d(0, -pFallDistance / 150, 0), new Vector3d(posFinal.x, posFinal.y, posFinal.z));
             }
         });
     }
