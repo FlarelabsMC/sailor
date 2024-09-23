@@ -53,7 +53,7 @@ public class MathUtil {
             init(seed);
         }
 
-        public double noise(double x, double y, double z) {
+        public double noise(double x, double z, double y) {
 
             int bx, by, bz, b0, b1, b00, b10, b01, b11;
             double rx0, rx1, ry0, ry1, rz, sx, sy, sz, a, b, c, d, u, v, q[];
