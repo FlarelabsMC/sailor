@@ -20,7 +20,7 @@ import net.minecraftforge.fml.common.Mod;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.joml.primitives.AABBd;
-import org.joml.primitives.AABBic;
+import org.joml.primitives.AABBdc;
 import org.slf4j.Logger;
 import org.valkyrienskies.core.api.ships.LoadedServerShip;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
@@ -61,54 +61,36 @@ public class Sailor {
         if (event.level.isClientSide()) return;
         oceanNoise.setSeed(event.level.getServer().getWorldData().worldGenOptions().seed());
 
-        if (event.level.getGameTime() % 20 == 0) return;
+        if (event.level.getGameTime() % 4 == 0) return;
         VSGameUtilsKt.getShipObjectWorld(event.level.getServer()).getLoadedShips().forEach(ship -> {
-            if (!ShipUtil.isShipInWater(ship, event.level)) return;
-            WindAndWaves windAndWaves = calculateWindAndWaves(ship, event.level.getGameTime(), event.level);
-//            if (windAndWaves == null || windAndWaves.forceApplier == null) return;
-
+            calculateWindAndWaves(ship, event.level.getGameTime(), event.level);
             // TODO: Add wind
         });
     }
 
-    public static WindAndWaves calculateWindAndWaves(LoadedServerShip ship, long time, Level level) {
-        if (ship == null) return null;
-        if (ship.getVelocity().length() > 2.5) return null;
+    public static void calculateWindAndWaves(LoadedServerShip ship, long time, Level level) {
+        if (ship == null) return;
         if (ship.getAttachment(GameTickForceApplier.class) == null) {
             ship.saveAttachment(GameTickForceApplier.class, new GameTickForceApplier());
         }
         GameTickForceApplier forceApplier = ship.getAttachment(GameTickForceApplier.class);
-    
         double mass = ship.getInertiaData().getMass();
-        Vector3d velocity = new Vector3d(ship.getVelocity().x(), 0, ship.getVelocity().z());
-    
-        Vector3d breeze = new Vector3d(10, 0, 10).mul(0.1 * 3.2);
-        Vector3d force = breeze.sub(velocity).mul(mass * 0.1);
-    
-        Vector3dc pos = ship.getTransform().getPositionInWorld();
-        Vector3dc noise3d = oceanNoise.noise3d(pos.x(), time, pos.z()).mul(new Vector3d(100, 1, 100), new Vector3d()); // perlin noise position
-
-        AABBic shipAABB = ship.getShipAABB();
-        if (shipAABB == null) return null;
-
-        for (int x = shipAABB.minX(); x <= shipAABB.maxX(); x++) {
-            for (int z = shipAABB.minZ(); z <= shipAABB.maxZ(); z++) {
-                BlockPos blockPos = new BlockPos(x, shipAABB.minY(), z);
-                if (!level.getBlockState(blockPos).isAir()) {
-                    Vector3d blockPosInWorld = new Vector3d(x, shipAABB.minY(), z);
-
-                    blockPosInWorld = ship.getTransform().getWorldToShip().transformPosition(blockPosInWorld).sub(ship.getTransform().getPositionInShip());
+        AABBdc shipAABB = ship.getWorldAABB();
+        if (ShipUtil.isShipInWater(ship, level)) {
+            for (int x = (int) shipAABB.minX(); x <= shipAABB.maxX(); x++) {
+                for (int z = (int) shipAABB.minZ(); z <= shipAABB.maxZ(); z++) {
+                    Vec3 p = new Vec3(x, shipAABB.minY(), z);
+                    BlockHitResult clip = level.clip(new ClipContext(p.add(0, 1, 0), p.subtract(0, 1, 0), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, null));
+                    Vec3 pos = clip.getLocation();
+                    Vector3d posFinal = ship.getTransform().getWorldToShip().transformPosition(new Vector3d(pos.x, pos.y, pos.z)).sub(ship.getTransform().getPositionInShip());
+                    Vector3dc noise3d = oceanNoise.noise3d(posFinal.x(), posFinal.y(), posFinal.z());
                     double noiseHeight = noise3d.y();
                     if (noiseHeight < 0) noiseHeight = 0;
-
-                    Vector3d forceToApply = new Vector3d(0, noiseHeight * mass * 0.00000002, 0);
-
-                    forceApplier.applyInvariantForceToPos(forceToApply, blockPosInWorld);
+                    Vector3d forceToApply = new Vector3d(0, 2 * mass * noiseHeight, 0);
+                    forceApplier.applyInvariantForceToPos(forceToApply, posFinal);
                 }
             }
         }
-    
-        return new WindAndWaves(noise3d, null, forceApplier, ship, breeze, force);
     }
 
     public static void onFall(Level pLevel, BlockPos pPos, Entity pEntity, float pFallDistance) {
@@ -125,7 +107,6 @@ public class Sailor {
                 BlockHitResult clip = pLevel.clip(new ClipContext(playerPosInWorld, playerPosInWorld.subtract(0, 2, 0), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, null));
                 Vec3 pos = clip.getLocation();
                 Vector3d posFinal = ship.getTransform().getWorldToShip().transformPosition(new Vector3d(pos.x, pos.y, pos.z)).sub(ship.getTransform().getPositionInShip());
-                LOGGER.info("{}", pos);
                 double fallForce = -(60 * entityMass * Math.sqrt(2 * 10 * pFallDistance));
                 forcesApplier.applyInvariantForceToPos(new Vector3d(0, fallForce, 0), new Vector3d(posFinal.x, posFinal.y, posFinal.z));
             }
@@ -150,9 +131,6 @@ public class Sailor {
             }
         });
     }
-
-    // Extra:
-    public record WindAndWaves(Vector3dc noise, Vector3dc rotation, GameTickForceApplier forceApplier, LoadedServerShip ship, Vector3dc breeze, Vector3dc force) { }
 
     public static double getEntityMass(Entity entity) {
         return CONFIG.entityWeights.getOrDefault(BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString(), 1000d);
