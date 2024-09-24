@@ -1,6 +1,6 @@
 package com.squoshi.sailor.mixin;
 
-import com.squoshi.sailor.Sailor;
+import com.squoshi.sailor.ServerEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
@@ -16,6 +16,6 @@ public class BlockMixin {
     @Inject(method = "fallOn", at = @At("HEAD"))
     private void sailor$fallOn(Level pLevel, BlockState pState, BlockPos pPos, Entity pEntity, float pFallDistance, CallbackInfo ci) {
         if (pLevel.isClientSide()) return;
-        Sailor.onFall(pLevel, pPos, pEntity, pFallDistance);
+        ServerEvents.onFall(pLevel, pPos, pEntity, pFallDistance);
     }
 }
