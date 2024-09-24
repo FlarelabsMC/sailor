@@ -33,7 +33,6 @@ public class Sailor {
 
     public Sailor() {
         MinecraftForge.EVENT_BUS.addListener(ServerEvents::onLevelTick);
-        MinecraftForge.EVENT_BUS.addListener(ServerEvents::onPlayerTick);
         MinecraftForge.EVENT_BUS.addListener(ServerEvents::serverAboutToStart);
 
         AutoConfig.register(SailorServerConfig.class, GsonConfigSerializer::new);

@@ -7,6 +7,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.TickEvent;
@@ -54,19 +55,20 @@ public class ServerEvents {
         });
     }
 
-    public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (event.player.level().isClientSide()) return;
-        VSGameUtilsKt.getShipsIntersecting(event.player.level(), event.player.getBoundingBox()).forEach(s -> {
+    public static void stepOn(BlockPos pPos, Entity pEntity) {
+        if (pEntity.level().isClientSide()) return;
+        AABB aabb = new AABB(pPos.getX(), pPos.getY(), pPos.getZ(), pPos.getX() + 1, pPos.getY() + 1, pPos.getZ() + 1);
+        VSGameUtilsKt.getShipsIntersecting(pEntity.level(), aabb).forEach(s -> {
             if (s != null) {
-                LoadedServerShip ship = VSGameUtilsKt.getShipObjectManagingPos((ServerLevel) event.player.level(), s.getTransform().getPositionInShip());
+                LoadedServerShip ship = VSGameUtilsKt.getShipObjectManagingPos((ServerLevel) pEntity.level(), s.getTransform().getPositionInShip());
                 if (ship == null) return;
                 if (ship.getAttachment(GameTickForceApplier.class) == null) {
                     ship.saveAttachment(GameTickForceApplier.class, new GameTickForceApplier());
                 }
                 GameTickForceApplier forcesApplier = ship.getAttachment(GameTickForceApplier.class);
-                Vector3d pos = new Vector3d(event.player.getX(), event.player.getY(), event.player.getZ());
+                Vector3d pos = new Vector3d(pEntity.getX(), pEntity.getY(), pEntity.getZ());
                 Vector3d posFinal = ship.getTransform().getWorldToShip().transformPosition(pos).sub(ship.getTransform().getPositionInShip());
-                double entityMass = Sailor.getEntityMass(event.player);
+                double entityMass = Sailor.getEntityMass(pEntity);
                 double idleForce = -entityMass;
                 forcesApplier.applyInvariantForceToPos(new Vector3d(0, idleForce, 0), posFinal);
             }

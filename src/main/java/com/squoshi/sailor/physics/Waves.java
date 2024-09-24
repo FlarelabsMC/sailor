@@ -2,10 +2,7 @@ package com.squoshi.sailor.physics;
 
 import com.squoshi.sailor.util.MathUtil;
 import com.squoshi.sailor.util.NoiseStorage;
-import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.joml.primitives.AABBdc;
@@ -25,13 +22,11 @@ public class Waves extends NoiseStorage {
         AABBdc shipAABB = ship.getWorldAABB();
         for (int x = (int) shipAABB.minX(); x <= shipAABB.maxX(); x++) {
             for (int z = (int) shipAABB.minZ(); z <= shipAABB.maxZ(); z++) {
-                Vec3 p = new Vec3(x, shipAABB.minY(), z);
-                BlockHitResult clip = level.clip(new ClipContext(p.add(0, 1, 0), p.subtract(0, 1, 0), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, null));
-                Vec3 pos = clip.getLocation();
-                Vector3d posFinal = ship.getTransform().getWorldToShip().transformPosition(new Vector3d(pos.x, pos.y, pos.z)).sub(ship.getTransform().getPositionInShip());
+                Vector3d pos = new Vector3d(x, shipAABB.minY(), z);
+                Vector3d posFinal = ship.getTransform().getWorldToShip().transformPosition(pos).sub(ship.getTransform().getPositionInShip());
                 double oceanHeight = getOceanHeightAt(posFinal.x, posFinal.z, level.getGameTime(), oceanNoise);
                 if (oceanHeight < 0) oceanHeight = 0;
-                Vector3d forceToApply = new Vector3d(0, oceanHeight * mass, 0);
+                Vector3d forceToApply = new Vector3d(0, oceanHeight * mass / 2, 0);
                 forceApplier.applyInvariantForceToPos(forceToApply, posFinal);
             }
         }
@@ -40,8 +35,6 @@ public class Waves extends NoiseStorage {
 
     private static double getOceanHeightAt(double x, double z, long time, MathUtil.PerlinNoise oceanNoise) {
         Vector3dc noise3d = oceanNoise.noise3d(x, time, z);
-        double noiseHeight = noise3d.y();
-//        if (noiseHeight < 0) noiseHeight = 0;
-        return noiseHeight;
+        return noise3d.y();
     }
 }

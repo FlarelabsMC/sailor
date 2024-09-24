@@ -18,4 +18,9 @@ public class BlockMixin {
         if (pLevel.isClientSide()) return;
         ServerEvents.onFall(pLevel, pPos, pEntity, pFallDistance);
     }
+    @Inject(method = "stepOn", at = @At("HEAD"))
+    private void sailor$stepOn(Level pLevel, BlockPos pPos, BlockState pState, Entity pEntity, CallbackInfo ci) {
+        if (pLevel.isClientSide()) return;
+        ServerEvents.stepOn(pPos, pEntity);
+    }
 }
