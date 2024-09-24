@@ -6,11 +6,13 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.server.ServerAboutToStartEvent;
 import org.joml.Vector3d;
+import org.joml.Vector3dc;
 import org.joml.primitives.AABBd;
 import org.valkyrienskies.core.api.ships.LoadedServerShip;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
@@ -20,9 +22,10 @@ public class ServerEvents {
     public static void onLevelTick(TickEvent.LevelTickEvent event) {
         if (event.level.isClientSide()) return;
 
-        if (event.level.getGameTime() % 20 == 0) return;
         VSGameUtilsKt.getShipObjectWorld(event.level.getServer()).getLoadedShips().forEach(ship -> {
-            Waves.calculateWaves(ship, event.level);
+            Vector3dc pos = ship.getTransform().getPositionInWorld();
+            BlockPos blockPos = new BlockPos((int) pos.x(), (int) ship.getWorldAABB().minY(), (int) pos.z());
+            if (event.level.getBlockState(blockPos).getBlock() == Blocks.WATER) Waves.calculateWaves(ship, event.level);
             // TODO: Add wind
         });
     }
