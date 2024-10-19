@@ -1,7 +1,6 @@
 package com.squoshi.sailor.util;
 
 import org.joml.Vector3d;
-import org.joml.Vector3dc;
 
 import java.util.Random;
 
@@ -53,7 +52,11 @@ public class MathUtil {
             init(seed);
         }
 
-        public double noise(double x, double z, double y) {
+        public double noiseMC(double x, double y, double z) {
+            return noise(x, z, y);
+        }
+
+        public double noise(double x, double y, double z) {
 
             int bx, by, bz, b0, b1, b00, b10, b01, b11;
             double rx0, rx1, ry0, ry1, rz, sx, sy, sz, a, b, c, d, u, v, q[];
@@ -128,10 +131,6 @@ public class MathUtil {
             d = lerp(sy, a, b);
 
             return lerp(sz, c, d);
-        }
-
-        public Vector3dc noise3d(double x, double z, double y) {
-            return new Vector3d(noise(x, y), noise(y, z), noise(z, x));
         }
 
         public double noise(double x, double y) {
