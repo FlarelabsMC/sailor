@@ -3,7 +3,12 @@ package com.squoshi.sailor.physics;
 import com.squoshi.sailor.Sailor;
 import com.squoshi.sailor.util.MathUtil;
 import com.squoshi.sailor.util.NoiseStorage;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import org.joml.Vector3d;
+import org.joml.primitives.AABBdc;
 import org.valkyrienskies.core.api.ships.LoadedServerShip;
 import org.valkyrienskies.mod.common.util.GameTickForceApplier;
 
@@ -15,25 +20,34 @@ public class Waves extends NoiseStorage {
         if (ship.getAttachment(GameTickForceApplier.class) == null) {
             ship.saveAttachment(GameTickForceApplier.class, new GameTickForceApplier());
         }
-//        GameTickForceApplier forceApplier = ship.getAttachment(GameTickForceApplier.class);
-//        double mass = ship.getInertiaData().getMass();
-//        AABBdc shipAABB = ship.getWorldAABB();
-//        for (int x = (int) shipAABB.minX(); x <= shipAABB.maxX(); x++) {
-//            for (int z = (int) shipAABB.minZ(); z <= shipAABB.maxZ(); z++) {
-//                Vector3d pos = new Vector3d(x, shipAABB.minY(), z);
-//                Vector3d posFinal = ship.getTransform().getWorldToShip().transformPosition(pos).sub(ship.getTransform().getPositionInShip());
-//                double oceanHeight = getOceanHeightAt(posFinal.x, posFinal.z, level.getGameTime(), oceanNoise);
-//                Sailor.LOGGER.info("oceanHeight: " + 9.81 * oceanHeight * mass);
-//                double vForce = Math.max(9.81 * oceanHeight * mass, 0);
-////                double vForce = Math.max((oceanHeight * 1e6) / (mass / 60), 0);
-//                Sailor.LOGGER.info("vForce: " + vForce);
-////                Vector3d forceToApply = new Vector3d(0, vForce, 0);
-////                forceApplier.applyInvariantForceToPos(forceToApply, posFinal);
-//            }
-//        }
-        Sailor.LOGGER.info(oceanNoise.getSeed() + " oceanNoiseSeed");
-        Sailor.LOGGER.info(oceanNoise.noiseMC(10, 1, 10) + " oceanNoise");
-        Sailor.LOGGER.info(getOceanHeightAt(0, 0, level.getGameTime(), oceanNoise) + " oceanHeight");
+        GameTickForceApplier forceApplier = ship.getAttachment(GameTickForceApplier.class);
+        double mass = ship.getInertiaData().getMass();
+        AABBdc shipAABB = ship.getWorldAABB();
+        double x = shipAABB.maxX() - shipAABB.minX();
+        double z = shipAABB.maxZ() - shipAABB.minZ();
+        double centerX = x / 2;
+        double centerZ = z / 2;
+        for (double xx = 0 - centerX; xx < x - 1; xx++) {
+            for (double zz = 0 - centerZ; zz < z - 1; zz++) {
+                Vector3d posFinal = new Vector3d(xx, shipAABB.minY(), zz);
+                double oceanHeight = getOceanHeightAt(posFinal.x, posFinal.z, level.getGameTime(), oceanNoise) * 8;
+                Sailor.LOGGER.info("oceanHeight: " + oceanHeight + " at " + posFinal.x + ", " + posFinal.z);
+                BlockHitResult clip = level.clip(new ClipContext(
+                    new Vec3(centerX + posFinal.x, posFinal.y, centerZ + posFinal.z),
+                    new Vec3(centerX + posFinal.x, posFinal.y - 0.01, centerZ + posFinal.z),
+                    ClipContext.Block.COLLIDER, ClipContext.Fluid.WATER,
+                    null
+                ));
+                if (clip.getType() != BlockHitResult.Type.BLOCK) continue;
+                Vec3 location = clip.getLocation();
+                Vec3 pos = new Vec3(location.x, location.y + oceanHeight, location.z);
+                if (pos.y < posFinal.y) continue;
+                double vForce = Math.max(oceanHeight * (mass / 70), 0);
+//                Sailor.LOGGER.info("vForce: " + vForce + " at " + posFinal.x + ", " + posFinal.z);
+                Vector3d forceToApply = new Vector3d(0, vForce, 0);
+                forceApplier.applyInvariantForceToPos(forceToApply, posFinal);
+            }
+        }
         storeNoise(oceanNoise);
     }
 
