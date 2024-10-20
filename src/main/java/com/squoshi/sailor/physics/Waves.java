@@ -30,8 +30,9 @@ public class Waves extends NoiseStorage {
         for (double xx = 0 - centerX; xx < x - 1; xx++) {
             for (double zz = 0 - centerZ; zz < z - 1; zz++) {
                 Vector3d posFinal = new Vector3d(xx, shipAABB.minY(), zz);
-                double oceanHeight = getOceanHeightAt(posFinal.x, posFinal.z, level.getGameTime(), oceanNoise) * 8;
-                Sailor.LOGGER.info("oceanHeight: " + oceanHeight + " at " + posFinal.x + ", " + posFinal.z);
+                Vector3d worldPos = new Vector3d(shipAABB.minX() + centerX + posFinal.x, shipAABB.minY(), shipAABB.minZ() + centerZ + posFinal.z);
+                double oceanHeight = getOceanHeightAt(worldPos.x, worldPos.z, level.getGameTime(), oceanNoise) * 8;
+                Sailor.LOGGER.info("oceanHeight: " + oceanHeight + " at " + worldPos.x + ", " + worldPos.z);
                 BlockHitResult clip = level.clip(new ClipContext(
                     new Vec3(centerX + posFinal.x, posFinal.y, centerZ + posFinal.z),
                     new Vec3(centerX + posFinal.x, posFinal.y - 0.01, centerZ + posFinal.z),
