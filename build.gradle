@@ -144,6 +144,8 @@ dependencies {
 
     implementation 'thedarkcolour:kotlinforforge:4.10.0'
 
+    minecraftLibrary "de.articdive:jnoise-pipeline:4.1.0"
+
     annotationProcessor "org.spongepowered:mixin:${mixin_version}:processor"
 }
 

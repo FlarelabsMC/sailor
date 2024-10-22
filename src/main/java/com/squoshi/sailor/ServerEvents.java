@@ -1,6 +1,10 @@
 package com.squoshi.sailor;
 
 import com.squoshi.sailor.physics.Waves;
+import de.articdive.jnoise.core.api.functions.Interpolation;
+import de.articdive.jnoise.generators.noise_parameters.fade_functions.FadeFunction;
+import de.articdive.jnoise.modules.octavation.fractal_functions.FractalFunction;
+import de.articdive.jnoise.pipeline.JNoise;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -28,7 +32,8 @@ public class ServerEvents {
     }
 
     public static void serverAboutToStart(ServerAboutToStartEvent event) {
-        Waves.oceanNoise.setSeed(event.getServer().getWorldData().worldGenOptions().seed());
+        long seed = event.getServer().getWorldData().worldGenOptions().seed();
+        Waves.oceanNoise = JNoise.newBuilder().perlin(seed, Interpolation.COSINE, FadeFunction.QUINTIC_POLY).octavate(4, 1.0, 1.0, FractalFunction.FBM,false).build();
     }
 
     public static void onFall(Level pLevel, BlockPos pPos, Entity pEntity, float pFallDistance) {
