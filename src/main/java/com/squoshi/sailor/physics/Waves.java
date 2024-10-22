@@ -1,6 +1,5 @@
 package com.squoshi.sailor.physics;
 
-import com.squoshi.sailor.Sailor;
 import de.articdive.jnoise.pipeline.JNoise;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
@@ -37,7 +36,6 @@ public class Waves {
                 Vector3d posFinal = new Vector3d(xx, shipAABB.minY(), zz);
                 Vector3d worldPos = new Vector3d(shipAABB.minX() + centerX + posFinal.x, shipAABB.minY(), shipAABB.minZ() + centerZ + posFinal.z);
                 double oceanHeight = getOceanHeightAt(worldPos.x, worldPos.z, level.getGameTime(), oceanNoise);
-                Sailor.LOGGER.info("oceanHeight: " + oceanHeight + " at " + worldPos.x + ", " + worldPos.z);
                 BlockHitResult clip = level.clip(new ClipContext(
                     new Vec3(centerX + posFinal.x, posFinal.y, centerZ + posFinal.z),
                     new Vec3(centerX + posFinal.x, posFinal.y - level.getMaxBuildHeight(), centerZ + posFinal.z),
@@ -47,10 +45,8 @@ public class Waves {
                 if (clip.getType() != BlockHitResult.Type.BLOCK) continue;
                 Vec3 location = clip.getLocation();
                 if (level.getFluidState(clip.getBlockPos()).isEmpty()) continue;
-                Sailor.LOGGER.info(location.y() + oceanHeight + " > " + shipAABB.minY());
                 if ((location.y() + oceanHeight) > shipAABB.minY()) continue;
                 double vForce = Math.max(oceanHeight * (mass), 0);
-                Sailor.LOGGER.info("vForce: " + vForce + " at " + posFinal.x + ", " + posFinal.z);
                 forces.add(Pair.of(vForce, posFinal));
             }
         }
