@@ -1,5 +1,6 @@
 package com.squoshi.sailor.physics;
 
+import com.squoshi.sailor.Sailor;
 import de.articdive.jnoise.pipeline.JNoise;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
@@ -60,6 +61,7 @@ public class Waves {
                 }
             }
         }
+        if (waveHeights.isEmpty()) return;
 
         Vector3d averagePos = new Vector3d();
         double averageHeight = 0;
@@ -69,6 +71,10 @@ public class Waves {
         }
         averagePos.div(waveHeights.size());
         averageHeight /= waveHeights.size();
+
+        if (averageHeight < 0) return;
+
+        Sailor.LOGGER.info("Applying force " + averageHeight * mass);
 
         forceApplier.applyInvariantForceToPos(
                 new Vector3d(0, averageHeight * mass, 0),
