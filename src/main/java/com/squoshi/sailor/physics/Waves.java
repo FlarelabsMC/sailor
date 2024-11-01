@@ -40,22 +40,22 @@ public class Waves {
                     if (level.getBlockState(blockPosOnShip).isAir()) continue;
 
                     BlockPos bPos = new BlockPos((int) x, (int) y - 1, (int) z);
-                    boolean isEmpty = !level.getFluidState(bPos).isEmpty();
-                    if (isEmpty) continue;
+                    boolean isNotEmpty = !level.getFluidState(bPos).isEmpty();
+                    if (!isNotEmpty) continue;
 
                     int times = 0;
-                    while (!isEmpty) {
+                    while (isNotEmpty) {
                         bPos = bPos.above();
-                        isEmpty = level.getFluidState(bPos).isEmpty();
+                        isNotEmpty = !level.getFluidState(bPos).isEmpty();
                         times++;
                         if (times > 5) break;
                     }
-                    if (!isEmpty) continue;
+                    if (isNotEmpty) continue;
 
                     double oceanHeight = getOceanHeightAt(x, z, level.getGameTime(), oceanNoise);
-                    Vector3d pos = new Vector3d(x, y + 1 + oceanHeight, z);
+                    double height = bPos.getY() + oceanHeight;
 
-                    if (y <= pos.y()) {
+                    if (y <= height) {
                         waveHeights.add(Pair.of(posOnShip, oceanHeight));
                     }
                 }
@@ -74,10 +74,7 @@ public class Waves {
 
         if (averageHeight < 0) return;
 
-        double gravity = 9.81 * mass;
-        double force = averageHeight * gravity * mass;
-
-        Sailor.LOGGER.info("Applying force " + force);
+        double force = averageHeight * mass;
 
         forceApplier.applyInvariantForceToPos(new Vector3d(0, force, 0), averagePos);
     }

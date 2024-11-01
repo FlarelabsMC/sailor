@@ -12,7 +12,7 @@ public class SailorServerConfig implements ConfigData {
     @ConfigEntry.Gui.RequiresRestart
     public LinkedHashMap<String, Double> entityWeights = new LinkedHashMap<String, Double>() {
         {
-            this.put("minecraft:player", 1000d);
+            this.put("minecraft:player", 80d);
         }
     };
 
