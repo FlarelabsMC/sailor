@@ -74,12 +74,12 @@ public class Waves {
 
         if (averageHeight < 0) return;
 
-        Sailor.LOGGER.info("Applying force " + averageHeight * mass);
+        double gravity = 9.81 * mass;
+        double force = averageHeight * gravity * mass;
 
-        forceApplier.applyInvariantForceToPos(
-                new Vector3d(0, averageHeight * mass, 0),
-                new Vector3d(averagePos.x(), averagePos.y(), averagePos.z())
-        );
+        Sailor.LOGGER.info("Applying force " + force);
+
+        forceApplier.applyInvariantForceToPos(new Vector3d(0, force, 0), averagePos);
     }
 
     private static double getOceanHeightAt(double x, double z, long time, JNoise oceanNoise) {
